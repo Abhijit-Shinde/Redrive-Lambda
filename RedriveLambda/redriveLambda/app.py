@@ -10,7 +10,7 @@ logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
 
-    logger.info(event['detail'])
+    logger.info(f"Lambda Triggered from a {event["detail-type"]}")
     # Read source and dl queue URLs from environment variables
     deadLetter_queue_url = os.environ.get('SourceQueue')
     source_queue_url = os.environ.get('DestinationQueue')
