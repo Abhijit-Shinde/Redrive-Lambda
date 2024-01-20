@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Resources for Dead Letter Queue Redrive
+Resources:
+  MainQueue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+      RedrivePolicy: 
+        deadLetterTargetArn: 
+          Fn::GetAtt: 
+            - "DLQueue"
+            - "Arn"
+        maxReceiveCount: 5
+      QueueName: SourceQueue
+  DLQueue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+      QueueName: DeadLetterQueue
+  RedriveLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: RedriveLambda
+      CodeUri: redriveLambda/
+      Handler: app.lambda_handler
+      Description: Performs Scheduled Redrive from Dead Letter Queue to SourceQueue
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Events:
+        TriggerSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(2 minutes)
+            Name: redriveLambdaTrigger
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          SourceQueue: !GetAtt DLQueue.QueueUrl
+          DestinationQueue: !GetAtt MainQueue.QueueUrl
+      Role: arn:aws:iam::<replace_with_accountID>:role/lambdaAccess
